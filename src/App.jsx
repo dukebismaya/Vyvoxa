@@ -41,12 +41,26 @@ import {
   Smile,
   ChevronRight,
   ChevronLeft,
+  Share2,
+  MoreHorizontal,
+  UserPlus,
+  TrendingUp,
+  Hash,
+  MapPin,
+  Globe,
+  Edit3,
+  Trash2
 } from "lucide-react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AuthModal from "@/components/auth/AuthModal";
 import ProfileSettings from "@/components/auth/ProfileSettings";
 import WelcomeScreen from "@/components/WelcomeScreen";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import FriendDiscovery from "@/components/FriendDiscovery";
+import EnhancedPostComposer from "@/components/EnhancedPostComposer";
 import { seedDemoUsers } from "@/lib/demoData";
+import { postManager } from "@/lib/postManager";
+import { logError, isDevelopment } from "@/lib/config";
 
 // --- Helpers ---
 const uid = () => Math.random().toString(36).slice(2);
@@ -62,25 +76,25 @@ const seedUsers = [
     id: "u1",
     name: "Bismaya Jyoti Dalei",
     avatar:
-      "../assets/bismaya.jpg",
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
   },
   {
     id: "u2",
     name: "Knox Emberlyn",
     avatar:
-      "../assets/knox.jpg",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
   },
   {
     id: "u3",
     name: "Ayesha Dixit",
     avatar:
-      "../assets/ayesha.jpg",
+      "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
   },
   {
     id: "u4",
     name: "Liza Emberlyn",
     avatar:
-      "../assets/liza.jpg",
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
   },
 ];
 
@@ -124,29 +138,59 @@ const initialPosts = [
 
 // --- Core UI ---
 function VyvoxaApp() {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, getFriendRequests } = useAuth();
   const [dark, setDark] = useState(true);
   const [query, setQuery] = useState("");
-  const [posts, setPosts] = useState(initialPosts); // defer loading
+  const [posts, setPosts] = useState([]); // Start with empty array, load from postManager
   const [tab, setTab] = useState("for-you");
   const [notify, setNotify] = useState([{ id: uid(), text: "Welcome to Vyvoxa!" }]);
   const [composer, setComposer] = useState({ text: "", image: "" });
   const [storyIndex, setStoryIndex] = useState(0);
   const [savedIds, setSavedIds] = useState(new Set());
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(!localStorage.getItem('vyvoxa_visited'));
-
-  // Load persisted posts after mount (avoids SSR/window issues)
-  useEffect(() => {
+  const [showFriendDiscovery, setShowFriendDiscovery] = useState(false);
+  const [showEnhancedComposer, setShowEnhancedComposer] = useState(false);
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [trendingHashtags, setTrendingHashtags] = useState([]);
+  const [showWelcome, setShowWelcome] = useState(() => {
     try {
-      const saved = localStorage.getItem("vyvoxa_posts");
-      if (saved) setPosts(JSON.parse(saved));
-    } catch { }
+      return !localStorage.getItem('vyvoxa_visited');
+    } catch (error) {
+      logError(error, 'localStorage access');
+      return true; // Default to showing welcome if localStorage fails
+    }
+  });
+
+  // Load posts from postManager
+  useEffect(() => {
+    const loadPosts = () => {
+      const allPosts = postManager.getAllPosts();
+      setPosts(allPosts);
+    };
+
+    // Load initial posts
+    loadPosts();
+
+    // Subscribe to post updates
+    const unsubscribe = postManager.subscribe(loadPosts);
+
+    return unsubscribe;
   }, []);
 
+  // Load friend requests and trending hashtags
   useEffect(() => {
-    localStorage.setItem("vyvoxa_posts", JSON.stringify(posts));
-  }, [posts]);
+    if (currentUser) {
+      try {
+        const requests = getFriendRequests();
+        setFriendRequests(requests);
+        
+        const trending = postManager.getTrendingHashtags(5);
+        setTrendingHashtags(trending);
+      } catch (error) {
+        logError(error, 'Loading friend requests or trending hashtags');
+      }
+    }
+  }, [currentUser, getFriendRequests]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -173,25 +217,26 @@ function VyvoxaApp() {
   }, [currentUser]);
 
   const filtered = useMemo(() => {
+    if (!query.trim()) return posts;
+    
     const q = query.trim().toLowerCase();
-    return q ? posts.filter(p => p.text.toLowerCase().includes(q)) : posts;
+    return posts.filter(post => 
+      post.text.toLowerCase().includes(q) ||
+      (post.hashtags && post.hashtags.some(tag => tag.toLowerCase().includes(q))) ||
+      (post.mentions && post.mentions.some(mention => mention.toLowerCase().includes(q)))
+    );
   }, [query, posts]);
 
-  const addPost = () => {
-    if (!composer.text.trim() && !composer.image.trim()) return;
-    setPosts(prev => [
-      {
-        id: uid(),
-        userId: currentUser.id,
-        text: composer.text.trim(),
-        image: composer.image.trim(),
-        likes: 0,
-        comments: [],
-        createdAt: Date.now(),
-      },
-      ...prev,
-    ]);
-    setComposer({ text: "", image: "" });
+  const addPost = async (postData) => {
+    try {
+      const newPost = postManager.createPost(postData, currentUser);
+      setNotify(prev => [...prev, { id: uid(), text: "Post shared successfully!" }]);
+      setShowEnhancedComposer(false);
+      return newPost;
+    } catch (error) {
+      logError(error, 'Adding post');
+      setNotify(prev => [...prev, { id: uid(), text: "Failed to share post" }]);
+    }
   };
 
   const updatePost = (id, patch) => {
@@ -207,6 +252,40 @@ function VyvoxaApp() {
   };
 
   const savedPosts = posts.filter(p => savedIds.has(p.id));
+
+  const toggleReaction = (postId, reactionType = 'like') => {
+    try {
+      postManager.toggleReaction(postId, currentUser.id, reactionType);
+    } catch (error) {
+      logError(error, 'Toggling reaction');
+    }
+  };
+
+  const addComment = (postId, commentText) => {
+    try {
+      postManager.addComment(postId, { text: commentText }, currentUser);
+    } catch (error) {
+      logError(error, 'Adding comment');
+    }
+  };
+
+  const sharePost = (postId, shareText = '') => {
+    try {
+      postManager.sharePost(postId, currentUser, shareText);
+      setNotify(prev => [...prev, { id: uid(), text: "Post shared!" }]);
+    } catch (error) {
+      logError(error, 'Sharing post');
+    }
+  };
+
+  const deletePost = (postId) => {
+    try {
+      postManager.deletePost(postId, currentUser.id);
+      setNotify(prev => [...prev, { id: uid(), text: "Post deleted" }]);
+    } catch (error) {
+      logError(error, 'Deleting post');
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -238,6 +317,8 @@ function VyvoxaApp() {
           onSearch={setQuery} 
           notifications={notify} 
           currentUser={currentUser}
+          friendRequests={friendRequests}
+          onShowFriendDiscovery={() => setShowFriendDiscovery(true)}
         />
         <main className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-[260px_1fr_320px] gap-6 px-4 md:px-6 py-6">
           <LeftNav 
@@ -245,6 +326,8 @@ function VyvoxaApp() {
             setTab={setTab} 
             me={currentUser} 
             onLogout={handleLogout}
+            onShowFriendDiscovery={() => setShowFriendDiscovery(true)}
+            friendRequestCount={friendRequests.length}
           />
           {tab === "settings" ? (
             <div className="space-y-4">
@@ -266,10 +349,32 @@ function VyvoxaApp() {
               onToggleSave={toggleSave}
               savedPosts={savedPosts}
               currentUser={currentUser}
+              onShowEnhancedComposer={() => setShowEnhancedComposer(true)}
+              onToggleReaction={toggleReaction}
+              onAddComment={addComment}
+              onSharePost={sharePost}
+              onDeletePost={deletePost}
             />
           )}
-          <RightRail users={Object.values(users).filter(u => u.id !== currentUser.id)} />
+          <RightRail 
+            users={Object.values(users).filter(u => u.id !== currentUser.id)}
+            trendingHashtags={trendingHashtags}
+            onShowFriendDiscovery={() => setShowFriendDiscovery(true)}
+          />
         </main>
+
+        {/* Modals */}
+        <AnimatePresence>
+          {showFriendDiscovery && (
+            <FriendDiscovery onClose={() => setShowFriendDiscovery(false)} />
+          )}
+          {showEnhancedComposer && (
+            <EnhancedPostComposer 
+              onPost={addPost}
+              onCancel={() => setShowEnhancedComposer(false)}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </TooltipProvider>
   );
@@ -701,12 +806,18 @@ function RightRail({ users }) {
 export default function App() {
   // Seed demo users for testing
   useEffect(() => {
-    seedDemoUsers();
+    try {
+      seedDemoUsers();
+    } catch (error) {
+      logError(error, 'Seeding demo users');
+    }
   }, []);
 
   return (
-    <AuthProvider>
-      <VyvoxaApp />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <VyvoxaApp />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

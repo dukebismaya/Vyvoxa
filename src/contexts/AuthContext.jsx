@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import CryptoJS from 'crypto-js';
+import { logError } from '@/lib/config';
 
 const AuthContext = createContext();
 
@@ -54,13 +55,13 @@ export function AuthProvider({ children }) {
         }
       }
     } catch (error) {
-      console.error('Error loading user from localStorage:', error);
+      logError(error, 'Loading user from localStorage');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const signup = async (email, password, name) => {
+  const signup = async (email, password, name, additionalData = {}) => {
     try {
       // Get existing users
       const existingUsers = JSON.parse(localStorage.getItem('vyvoxa_users') || '[]');
@@ -70,7 +71,7 @@ export function AuthProvider({ children }) {
         throw new Error('User already exists with this email');
       }
 
-      // Create new user
+      // Create new user with enhanced profile
       const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const hashedPassword = hashPassword(password);
       
@@ -79,9 +80,30 @@ export function AuthProvider({ children }) {
         email,
         name,
         password: hashedPassword,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
-        createdAt: Date.now(),
-        isVerified: false
+        avatar: additionalData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff`,
+        bio: additionalData.bio || `Hey there! I'm ${name.split(' ')[0]} and I'm new to Vyvoxa! 👋`,
+        location: additionalData.location || '',
+        website: additionalData.website || '',
+        coverPhoto: additionalData.coverPhoto || 'https://images.unsplash.com/photo-1519638831568-d9897f573d12?w=800&h=200&fit=crop',
+        joinedAt: Date.now(),
+        isVerified: false,
+        isOnline: true,
+        lastSeen: Date.now(),
+        followers: [],
+        following: [],
+        postsCount: 0,
+        settings: {
+          privacy: 'public', // public, friends, private
+          notifications: true,
+          darkMode: true,
+          language: 'en'
+        },
+        interests: additionalData.interests || [],
+        socialLinks: {
+          twitter: '',
+          linkedin: '',
+          instagram: ''
+        }
       };
 
       // Save user to storage
@@ -170,7 +192,7 @@ export function AuthProvider({ children }) {
       }
 
       // Update user in storage
-      users[userIndex] = { ...users[userIndex], ...updates };
+      users[userIndex] = { ...users[userIndex], ...updates, lastSeen: Date.now() };
       localStorage.setItem('vyvoxa_users', JSON.stringify(users));
 
       // Update current user
@@ -186,6 +208,118 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Friend system functions
+  const sendFriendRequest = async (targetUserId) => {
+    try {
+      const users = JSON.parse(localStorage.getItem('vyvoxa_users') || '[]');
+      const requests = JSON.parse(localStorage.getItem('vyvoxa_friend_requests') || '[]');
+      
+      // Check if request already exists
+      const existingRequest = requests.find(req => 
+        req.senderId === currentUser.id && req.receiverId === targetUserId
+      );
+      
+      if (existingRequest) {
+        throw new Error('Friend request already sent');
+      }
+
+      // Add friend request
+      const newRequest = {
+        id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        senderId: currentUser.id,
+        receiverId: targetUserId,
+        status: 'pending',
+        sentAt: Date.now()
+      };
+
+      requests.push(newRequest);
+      localStorage.setItem('vyvoxa_friend_requests', JSON.stringify(requests));
+
+      return { success: true };
+    } catch (error) {
+      throw new Error(error.message || 'Failed to send friend request');
+    }
+  };
+
+  const acceptFriendRequest = async (requestId) => {
+    try {
+      const users = JSON.parse(localStorage.getItem('vyvoxa_users') || '[]');
+      const requests = JSON.parse(localStorage.getItem('vyvoxa_friend_requests') || '[]');
+      
+      const requestIndex = requests.findIndex(req => req.id === requestId);
+      if (requestIndex === -1) {
+        throw new Error('Friend request not found');
+      }
+
+      const request = requests[requestIndex];
+      
+      // Update users' friend lists
+      const senderIndex = users.findIndex(u => u.id === request.senderId);
+      const receiverIndex = users.findIndex(u => u.id === request.receiverId);
+      
+      if (senderIndex !== -1 && receiverIndex !== -1) {
+        users[senderIndex].followers = users[senderIndex].followers || [];
+        users[senderIndex].following = users[senderIndex].following || [];
+        users[receiverIndex].followers = users[receiverIndex].followers || [];
+        users[receiverIndex].following = users[receiverIndex].following || [];
+        
+        // Add each other as friends
+        if (!users[senderIndex].following.includes(request.receiverId)) {
+          users[senderIndex].following.push(request.receiverId);
+        }
+        if (!users[receiverIndex].followers.includes(request.senderId)) {
+          users[receiverIndex].followers.push(request.senderId);
+        }
+        if (!users[receiverIndex].following.includes(request.senderId)) {
+          users[receiverIndex].following.push(request.senderId);
+        }
+        if (!users[senderIndex].followers.includes(request.receiverId)) {
+          users[senderIndex].followers.push(request.receiverId);
+        }
+      }
+
+      // Remove friend request
+      requests.splice(requestIndex, 1);
+      
+      localStorage.setItem('vyvoxa_users', JSON.stringify(users));
+      localStorage.setItem('vyvoxa_friend_requests', JSON.stringify(requests));
+
+      return { success: true };
+    } catch (error) {
+      throw new Error(error.message || 'Failed to accept friend request');
+    }
+  };
+
+  const getFriendRequests = () => {
+    try {
+      const requests = JSON.parse(localStorage.getItem('vyvoxa_friend_requests') || '[]');
+      const users = JSON.parse(localStorage.getItem('vyvoxa_users') || '[]');
+      
+      return requests
+        .filter(req => req.receiverId === currentUser.id && req.status === 'pending')
+        .map(req => {
+          const sender = users.find(u => u.id === req.senderId);
+          return {
+            ...req,
+            sender: sender ? { ...sender, password: undefined } : null
+          };
+        });
+    } catch (error) {
+      return [];
+    }
+  };
+
+  const getAllUsers = () => {
+    try {
+      const users = JSON.parse(localStorage.getItem('vyvoxa_users') || '[]');
+      return users
+        .filter(u => u.id !== currentUser.id)
+        .map(u => ({ ...u, password: undefined }));
+    } catch (error) {
+      return [];
+    }
+  };
+
   const value = {
     currentUser,
     isAuthenticated,
@@ -194,7 +328,11 @@ export function AuthProvider({ children }) {
     login,
     logout,
     resetPassword,
-    updateProfile
+    updateProfile,
+    sendFriendRequest,
+    acceptFriendRequest,
+    getFriendRequests,
+    getAllUsers
   };
 
   return (
