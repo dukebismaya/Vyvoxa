@@ -310,7 +310,14 @@ function VyvoxaApp() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black text-zinc-900 dark:text-zinc-100 overflow-x-hidden" style={{maxWidth: '100vw'}}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 text-zinc-900 dark:text-zinc-100 overflow-x-hidden relative" style={{maxWidth: '100vw'}}>
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-r from-purple-300/20 to-pink-300/20 blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-r from-cyan-300/20 to-blue-300/20 blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-gradient-to-r from-fuchsia-300/10 to-violet-300/10 blur-3xl animate-pulse delay-500"></div>
+        </div>
+        
         <TopBar 
           dark={dark} 
           setDark={setDark} 
@@ -433,51 +440,94 @@ function TopBar({ dark, setDark, onSearch, notifications, currentUser }) {
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800"
+      className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-white/20 dark:border-slate-800/50"
     >
-      <div className="w-full flex items-center justify-between gap-2 px-2 h-14">
-        <div className="flex items-center gap-3">
+      <div className="mx-auto max-w-7xl flex items-center justify-between h-14 px-2 sm:px-4">
+        {/* Logo Section */}
+        <motion.div 
+          className="flex items-center gap-2"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
           <motion.div
-            whileHover={{ rotate: 10, scale: 1.05 }}
-            className="h-9 w-9 grid place-items-center rounded-2xl bg-gradient-to-br from-fuchsia-500 to-cyan-500 shadow-lg"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="relative"
           >
-            <Sparkles className="h-5 w-5 text-white" />
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
           </motion.div>
-          <div className="font-extrabold tracking-tight text-xl md:text-2xl">Vyvoxa</div>
-        </div>
+          <span className="font-bold text-lg bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent">
+            Vyvoxa
+          </span>
+        </motion.div>
 
-        <div className="hidden md:flex items-center gap-2 flex-1 max-w-xl">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 opacity-60" />
+        {/* Search Bar */}
+        <div className="flex-1 max-w-md mx-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              onChange={(e) => onSearch(e.target.value)}
-              placeholder="Search posts, people, tags…"
-              className="pl-9"
+              placeholder="Search posts, people, tags..."
+              className="pl-10 bg-white/50 dark:bg-slate-800/50 border-white/20 dark:border-slate-700/50 backdrop-blur-sm focus:bg-white/80 dark:focus:bg-slate-800/80 transition-all duration-200"
+              onChange={(e) => onSearch?.(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-2xl">
-                <Bell className="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Notifications ({notifications.length})</TooltipContent>
-          </Tooltip>
+        {/* Right Controls */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Notifications */}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="relative"
+          >
+            <Button
+              size="sm"
+              variant="ghost"
+              className="relative p-2 hover:bg-white/20 dark:hover:bg-slate-800/50"
+            >
+              <Bell className="h-4 w-4" />
+              {notifications?.length > 0 && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-lg"
+                >
+                  {notifications.length}
+                </motion.div>
+              )}
+            </Button>
+          </motion.div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs opacity-70 hidden sm:block">Dark</span>
-            <Switch checked={dark} onCheckedChange={setDark} />
-          </div>
+          {/* Theme Toggle */}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Switch
+              checked={dark}
+              onCheckedChange={setDark}
+              className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-purple-500 data-[state=checked]:to-cyan-500"
+            />
+          </motion.div>
+          <span className="text-xs text-slate-600 dark:text-slate-400 hidden sm:inline">
+            Dark
+          </span>
 
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={currentUser?.avatar} />
-            <AvatarFallback>
-              {currentUser?.name?.split(' ').map(n => n[0]).join('') || 'U'}
-            </AvatarFallback>
-          </Avatar>
+          {/* User Avatar */}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Avatar className="h-8 w-8 ring-2 ring-gradient-to-r ring-purple-500/30 ring-cyan-500/30">
+              <AvatarImage src={currentUser?.avatar} />
+              <AvatarFallback className="bg-gradient-to-br from-purple-500 to-cyan-500 text-white text-sm">
+                {currentUser?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+              </AvatarFallback>
+            </Avatar>
+          </motion.div>
         </div>
       </div>
     </motion.header>
@@ -486,24 +536,34 @@ function TopBar({ dark, setDark, onSearch, notifications, currentUser }) {
 
 function LeftNav({ tab, setTab, me, onLogout }) {
   const LinkBtn = ({ icon: Icon, label, value, onClick }) => (
-    <Button
-      variant={tab === value ? "default" : "ghost"}
-      className={`w-full justify-start gap-2 rounded-xl text-sm ${tab === value ? "shadow" : ""
+    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+      <Button
+        variant={tab === value ? "default" : "ghost"}
+        className={`w-full justify-start gap-2 rounded-xl text-sm transition-all duration-200 ${
+          tab === value 
+            ? "bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30" 
+            : "hover:bg-white/60 dark:hover:bg-slate-700/60 backdrop-blur-sm"
         }`}
-      onClick={onClick || (() => setTab(value))}
-    >
-      <Icon className="h-4 w-4 flex-shrink-0" /> <span className="truncate">{label}</span>
-    </Button>
+        onClick={onClick || (() => setTab(value))}
+      >
+        <Icon className="h-4 w-4 flex-shrink-0" /> <span className="truncate">{label}</span>
+      </Button>
+    </motion.div>
   );
 
   return (
     <aside className="hidden xl:block w-full max-w-[180px]">
-      <Card className="rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
-        <CardContent className="p-3">
-          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-zinc-100 dark:border-zinc-700">
-            <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarImage src={me?.avatar} />
-              <AvatarFallback>
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card className="rounded-2xl bg-white/70 dark:bg-slate-800/70 border border-white/30 dark:border-slate-600/30 shadow-xl shadow-black/5 backdrop-blur-md">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-white/30 dark:border-slate-600/30">
+              <Avatar className="h-8 w-8 flex-shrink-0 ring-2 ring-white/20 dark:ring-slate-600/20">
+                <AvatarImage src={me?.avatar} />
+                <AvatarFallback>
                 {me?.name?.split(' ').map(n => n[0]).join('') || 'U'}
               </AvatarFallback>
             </Avatar>
@@ -522,6 +582,7 @@ function LeftNav({ tab, setTab, me, onLogout }) {
           </div>
         </CardContent>
       </Card>
+      </motion.div>
     </aside>
   );
 }
@@ -589,13 +650,32 @@ return (
 
 function EmptyState({ title, subtitle }) {
   return (
-    <Card className="rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
-      <CardContent className="p-10 text-center">
-        <Sparkles className="mx-auto mb-3" />
-        <div className="font-semibold text-lg">{title}</div>
-        <p className="opacity-70">{subtitle}</p>
-      </CardContent>
-    </Card>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="rounded-3xl bg-gradient-to-br from-white/80 to-slate-50/80 dark:from-slate-800/80 dark:to-slate-900/80 border border-white/30 dark:border-slate-600/30 shadow-xl shadow-black/5 backdrop-blur-md">
+        <CardContent className="p-10 text-center">
+          <motion.div
+            animate={{ 
+              rotate: [0, 10, -10, 5, 0],
+              scale: [1, 1.1, 1]
+            }}
+            transition={{ 
+              duration: 2,
+              repeat: Infinity,
+              repeatDelay: 3
+            }}
+            className="inline-block"
+          >
+            <Sparkles className="mx-auto mb-3 h-8 w-8 text-purple-500" />
+          </motion.div>
+          <div className="font-semibold text-lg bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent">{title}</div>
+          <p className="opacity-70 mt-2">{subtitle}</p>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -609,69 +689,105 @@ function Stories({ users, index, setIndex }) {
   };
 
   return (
-    <Card className="rounded-3xl overflow-hidden bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between py-4">
-        <CardTitle className="text-base">Stories</CardTitle>
-        <div className="flex gap-2">
-          <Button size="icon" variant="secondary" onClick={() => scrollBy(-1)} className="rounded-2xl"><ChevronLeft className="h-4 w-4" /></Button>
-          <Button size="icon" variant="secondary" onClick={() => scrollBy(1)} className="rounded-2xl"><ChevronRight className="h-4 w-4" /></Button>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div ref={containerRef} className="flex gap-3 overflow-x-auto scrollbar-hide py-2 pr-1">
-          {users.map((u, i) => (
-            <motion.div key={u.id} whileHover={{ y: -4 }} className="min-w-[160px]">
-              <div className="relative h-40 w-40 rounded-3xl overflow-hidden shadow">
-                <img src={u.avatar} alt={u.name} className="object-cover h-full w-full" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-2 left-2 text-white font-medium drop-shadow">{u.name}</div>
-              </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.1 }}
+    >
+      <Card className="rounded-3xl overflow-hidden bg-gradient-to-br from-white/80 to-slate-50/80 dark:from-slate-800/80 dark:to-slate-900/80 border border-white/30 dark:border-slate-600/30 shadow-xl shadow-black/5 backdrop-blur-md">
+        <CardHeader className="flex flex-row items-center justify-between py-4 bg-gradient-to-r from-transparent to-purple-50/20 dark:to-purple-900/10">
+          <CardTitle className="text-base font-semibold bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent">Stories</CardTitle>
+          <div className="flex gap-2">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button size="icon" variant="secondary" onClick={() => scrollBy(-1)} className="rounded-2xl bg-white/50 dark:bg-slate-700/50 hover:bg-white/70 dark:hover:bg-slate-600/70 backdrop-blur-sm border-white/30 dark:border-slate-600/30">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
             </motion.div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button size="icon" variant="secondary" onClick={() => scrollBy(1)} className="rounded-2xl bg-white/50 dark:bg-slate-700/50 hover:bg-white/70 dark:hover:bg-slate-600/70 backdrop-blur-sm border-white/30 dark:border-slate-600/30">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </motion.div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div ref={containerRef} className="flex gap-3 overflow-x-auto scrollbar-hide py-2 pr-1">
+            {users.map((u, i) => (
+              <motion.div key={u.id} whileHover={{ y: -4, scale: 1.02 }} className="min-w-[160px]">
+                <div className="relative h-40 w-40 rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <img src={u.avatar} alt={u.name} className="object-cover h-full w-full" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute bottom-2 left-2 text-white font-medium drop-shadow-lg">{u.name}</div>
+                  <div className="absolute top-2 left-2 w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 p-0.5">
+                    <div className="w-full h-full rounded-full bg-white dark:bg-slate-800 flex items-center justify-center">
+                      <Plus className="h-4 w-4 text-purple-500" />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
 function Composer({ composer, setComposer, addPost, currentUser }) {
   return (
-    <Card className="rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
-      <CardContent className="p-3">
-        <div className="flex gap-2">
-          <Avatar className="h-9 w-9 shrink-0">
-            <AvatarImage src={currentUser?.avatar} />
-            <AvatarFallback>
-              {currentUser?.name?.split(' ').map(n => n[0]).join('') || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="w-full space-y-2">
-            <Textarea
-              value={composer.text}
-              onChange={(e) => setComposer((s) => ({ ...s, text: e.target.value }))}
-              placeholder="Share something with Vyvoxa…"
-              className="min-h-[80px] rounded-2xl"
-            />
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Optional image URL"
-                value={composer.image}
-                onChange={(e) => setComposer((s) => ({ ...s, image: e.target.value }))}
-                className="rounded-2xl"
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+    >
+      <Card className="rounded-3xl bg-gradient-to-br from-white/80 to-slate-50/80 dark:from-slate-800/80 dark:to-slate-900/80 border border-white/30 dark:border-slate-600/30 shadow-xl shadow-black/5 backdrop-blur-md">
+        <CardContent className="p-4">
+          <div className="flex gap-3">
+            <Avatar className="h-10 w-10 shrink-0 ring-2 ring-white/20 dark:ring-slate-600/20">
+              <AvatarImage src={currentUser?.avatar} />
+              <AvatarFallback>
+                {currentUser?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="w-full space-y-3">
+              <Textarea
+                value={composer.text}
+                onChange={(e) => setComposer((s) => ({ ...s, text: e.target.value }))}
+                placeholder="Share something with Vyvoxa…"
+                className="min-h-[80px] rounded-2xl bg-white/60 dark:bg-slate-700/60 border-white/30 dark:border-slate-600/30 focus:border-purple-300 dark:focus:border-purple-500 focus:ring-purple-200 dark:focus:ring-purple-800 backdrop-blur-sm resize-none"
               />
-              <Button onClick={addPost} className="rounded-2xl">
-                <Send className="h-4 w-4 mr-2" /> Post
-              </Button>
-            </div>
-            <div className="flex items-center gap-3 text-sm opacity-70">
-              <div className="flex items-center gap-1"><ImageIcon className="h-4 w-4" /> Image</div>
-              <div className="flex items-center gap-1"><Smile className="h-4 w-4" /> Feeling</div>
-              <div className="flex items-center gap-1"><Camera className="h-4 w-4" /> Live</div>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Optional image URL"
+                  value={composer.image}
+                  onChange={(e) => setComposer((s) => ({ ...s, image: e.target.value }))}
+                  className="rounded-2xl bg-white/60 dark:bg-slate-700/60 border-white/30 dark:border-slate-600/30 focus:border-purple-300 dark:focus:border-purple-500"
+                />
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    onClick={addPost} 
+                    className="rounded-2xl bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-200"
+                  >
+                    <Send className="h-4 w-4 mr-2" /> Post
+                  </Button>
+                </motion.div>
+              </div>
+              <div className="flex items-center gap-4 text-sm opacity-70">
+                <motion.div whileHover={{ scale: 1.05 }} className="flex items-center gap-1 cursor-pointer hover:opacity-100 transition-opacity">
+                  <ImageIcon className="h-4 w-4" /> Image
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} className="flex items-center gap-1 cursor-pointer hover:opacity-100 transition-opacity">
+                  <Smile className="h-4 w-4" /> Feeling
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} className="flex items-center gap-1 cursor-pointer hover:opacity-100 transition-opacity">
+                  <Camera className="h-4 w-4" /> Live
+                </motion.div>
+              </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -795,51 +911,81 @@ function PostCard({ p, user, onUpdate, saved, onToggleSave, currentUser }) {
 
 function RightRail({ users }) {
   return (
-    <aside className="hidden xl:block space-y-2 w-full max-w-[220px]">
-      <Card className="rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
-        <CardHeader className="py-2 border-b border-zinc-100 dark:border-zinc-700">
-          <CardTitle className="text-xs font-semibold">People you may know</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-2 pb-2">
-          <div className="space-y-2">
-            {users.slice(0, 3).map((u) => (
-              <div key={u.id} className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                  <Avatar className="h-7 w-7 flex-shrink-0">
-                    <AvatarImage src={u.avatar} />
-                    <AvatarFallback>{u.name[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="leading-tight min-w-0 flex-1">
-                    <div className="font-medium text-xs truncate">{u.name}</div>
-                    <div className="text-xs opacity-60 truncate">@{u.name.toLowerCase().replace(/\s+/g, "")}</div>
+    <aside className="hidden xl:block space-y-3 w-full max-w-[220px]">
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <Card className="rounded-2xl bg-gradient-to-br from-white/80 to-slate-50/80 dark:from-slate-800/80 dark:to-slate-900/80 border border-white/30 dark:border-slate-600/30 shadow-xl shadow-black/5 backdrop-blur-md">
+          <CardHeader className="py-3 bg-gradient-to-r from-transparent to-purple-50/20 dark:to-purple-900/10 border-b border-white/20 dark:border-slate-600/20">
+            <CardTitle className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent">People you may know</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-3 pb-3">
+            <div className="space-y-3">
+              {users.slice(0, 3).map((u, i) => (
+                <motion.div 
+                  key={u.id} 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.4 + i * 0.1 }}
+                  whileHover={{ scale: 1.02 }}
+                  className="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-white/40 dark:hover:bg-slate-700/40 transition-all duration-200"
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Avatar className="h-8 w-8 flex-shrink-0 ring-2 ring-white/20 dark:ring-slate-600/20">
+                      <AvatarImage src={u.avatar} />
+                      <AvatarFallback>{u.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="leading-tight min-w-0 flex-1">
+                      <div className="font-medium text-xs truncate">{u.name}</div>
+                      <div className="text-xs opacity-60 truncate">@{u.name.toLowerCase().replace(/\s+/g, "")}</div>
+                    </div>
                   </div>
-                </div>
-                <Button size="sm" className="rounded-xl h-6 text-xs px-2 flex-shrink-0"><Plus className="h-3 w-3" /></Button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button size="sm" className="rounded-xl h-7 text-xs px-3 flex-shrink-0 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white shadow-md shadow-purple-500/25">
+                      <Plus className="h-3 w-3 mr-1" />Follow
+                    </Button>
+                  </motion.div>
+                </motion.div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-      <Card className="rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
-        <CardHeader className="py-2 border-b border-zinc-100 dark:border-zinc-700">
-          <CardTitle className="text-xs font-semibold">Trends</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-2 pb-2">
-          <div className="space-y-1 text-xs">
-            {[
-              { tag: "#nightRun", posts: "3.1k" },
-              { tag: "#devSynth", posts: "1.2k" },
-              { tag: "#weekendHike", posts: "5.7k" },
-            ].map((t) => (
-              <div key={t.tag} className="flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-lg px-2 py-1 cursor-pointer transition-colors">
-                <div className="font-medium truncate">{t.tag}</div>
-                <div className="opacity-60 text-xs flex-shrink-0">{t.posts}</div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+      >
+        <Card className="rounded-2xl bg-gradient-to-br from-white/80 to-slate-50/80 dark:from-slate-800/80 dark:to-slate-900/80 border border-white/30 dark:border-slate-600/30 shadow-xl shadow-black/5 backdrop-blur-md">
+          <CardHeader className="py-3 bg-gradient-to-r from-transparent to-cyan-50/20 dark:to-cyan-900/10 border-b border-white/20 dark:border-slate-600/20">
+            <CardTitle className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent">Trends</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-3 pb-3">
+            <div className="space-y-2 text-xs">
+              {[
+                { tag: "#nightRun", posts: "3.1k" },
+                { tag: "#devSynth", posts: "1.2k" },
+                { tag: "#weekendHike", posts: "5.7k" },
+              ].map((t, i) => (
+                <motion.div 
+                  key={t.tag}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.5 + i * 0.1 }}
+                  whileHover={{ scale: 1.02 }}
+                  className="flex items-center justify-between hover:bg-white/40 dark:hover:bg-slate-700/40 rounded-lg px-2 py-2 cursor-pointer transition-all duration-200 group"
+                >
+                  <div className="font-medium truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">{t.tag}</div>
+                  <div className="opacity-60 text-xs flex-shrink-0 group-hover:opacity-80">{t.posts}</div>
+                </motion.div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
     </aside>
   );
 }
