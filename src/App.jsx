@@ -76,19 +76,19 @@ const seedUsers = [
     id: "u1",
     name: "Bismaya Jyoti Dalei",
     avatar:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+      "https://github.com/dukebismaya/Vyvoxa/blob/main/assets/knox.jpg?raw=true?w=150&h=150&fit=crop&crop=face",
   },
   {
     id: "u2",
     name: "Knox Emberlyn",
     avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      "",
   },
   {
     id: "u3",
     name: "Ayesha Dixit",
     avatar:
-      "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+      "https://cdn.pixabay.com/photo/2024/02/15/13/55/ai-generated-8575453_1280.png?w=150&h=150&fit=crop&crop=face",
   },
   {
     id: "u4",
@@ -310,7 +310,7 @@ function VyvoxaApp() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black text-zinc-900 dark:text-zinc-100">
+      <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black text-zinc-900 dark:text-zinc-100 overflow-x-hidden" style={{maxWidth: '100vw'}}>
         <TopBar 
           dark={dark} 
           setDark={setDark} 
@@ -320,7 +320,7 @@ function VyvoxaApp() {
           friendRequests={friendRequests}
           onShowFriendDiscovery={() => setShowFriendDiscovery(true)}
         />
-        <main className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-[260px_1fr_320px] gap-6 px-4 md:px-6 py-6">
+        <main className="w-full grid grid-cols-1 xl:grid-cols-[minmax(160px,180px)_1fr_minmax(200px,220px)] gap-2 px-1 sm:px-2 py-4 pb-20 min-h-[calc(100vh-3.5rem)]" style={{maxWidth: '100vw'}}>
           <LeftNav 
             tab={tab} 
             setTab={setTab} 
@@ -362,6 +362,54 @@ function VyvoxaApp() {
             onShowFriendDiscovery={() => setShowFriendDiscovery(true)}
           />
         </main>
+        
+        {/* Fixed Footer */}
+        <footer className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border-t border-zinc-200 dark:border-zinc-800 z-30">
+          <div className="w-full px-2 py-3 text-center">
+            <div className="text-xs text-zinc-600 dark:text-zinc-400">
+              © {new Date().getFullYear()} Bismaya Jyoti Dalei • Vyvoxa Prototype
+            </div>
+            <div className="flex items-center justify-center gap-4 mt-2">
+              <a 
+                href="https://discord.gg/your-server" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                title="Discord"
+              >
+                Discord
+              </a>
+              <a 
+                href="https://github.com/bismayajyotidali" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                title="GitHub"
+              >
+                GitHub
+              </a>
+              <a 
+                href="https://linkedin.com/in/bismayajyotidali" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                title="LinkedIn"
+              >
+                LinkedIn
+              </a>
+              <a 
+                href="https://youtube.com/@bismayajyotidali" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                title="YouTube"
+              >
+                YouTube
+              </a>
+            </div>
+            {/* <div className="text-xs text-zinc-500 mt-1">Made with React, Tailwind, shadcn/ui, Framer Motion.</div> */}
+          </div>
+        </footer>
 
         {/* Modals */}
         <AnimatePresence>
@@ -387,7 +435,7 @@ function TopBar({ dark, setDark, onSearch, notifications, currentUser }) {
       animate={{ y: 0, opacity: 1 }}
       className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800"
     >
-      <div className="mx-auto max-w-7xl flex items-center justify-between gap-4 px-4 md:px-6 h-16">
+      <div className="w-full flex items-center justify-between gap-2 px-2 h-14">
         <div className="flex items-center gap-3">
           <motion.div
             whileHover={{ rotate: 10, scale: 1.05 }}
@@ -440,35 +488,35 @@ function LeftNav({ tab, setTab, me, onLogout }) {
   const LinkBtn = ({ icon: Icon, label, value, onClick }) => (
     <Button
       variant={tab === value ? "default" : "ghost"}
-      className={`w-full justify-start gap-3 rounded-2xl ${tab === value ? "shadow" : ""
+      className={`w-full justify-start gap-2 rounded-xl text-sm ${tab === value ? "shadow" : ""
         }`}
       onClick={onClick || (() => setTab(value))}
     >
-      <Icon className="h-4 w-4" /> {label}
+      <Icon className="h-4 w-4 flex-shrink-0" /> <span className="truncate">{label}</span>
     </Button>
   );
 
   return (
-    <aside className="hidden lg:block">
-      <Card className="rounded-3xl">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3 mb-4">
-            <Avatar className="h-10 w-10">
+    <aside className="hidden xl:block w-full max-w-[180px]">
+      <Card className="rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-zinc-100 dark:border-zinc-700">
+            <Avatar className="h-8 w-8 flex-shrink-0">
               <AvatarImage src={me?.avatar} />
               <AvatarFallback>
                 {me?.name?.split(' ').map(n => n[0]).join('') || 'U'}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <div className="font-semibold leading-tight">{me?.name || 'User'}</div>
-              <Badge variant="secondary" className="rounded-full">Creator</Badge>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold leading-tight text-sm truncate">{me?.name || 'User'}</div>
+              <Badge variant="secondary" className="rounded-full text-xs">Creator</Badge>
             </div>
           </div>
-          <div className="grid gap-1.5">
+          <div className="grid gap-1">
             <LinkBtn icon={Home} label="For you" value="for-you" />
             <LinkBtn icon={Users} label="Following" value="following" />
             <LinkBtn icon={Bookmark} label="Saved" value="saved" />
-            <Separator className="my-2" />
+            <Separator className="my-1" />
             <LinkBtn icon={Settings} label="Settings" value="settings" />
             <LinkBtn icon={LogOut} label="Sign out" value="logout" onClick={onLogout} />
           </div>
@@ -495,7 +543,7 @@ function Feed({
   currentUser
 }) {
 return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <Stories users={Object.values(users)} index={storyIndex} setIndex={setStoryIndex} />
       <Composer 
         composer={composer} 
@@ -541,7 +589,7 @@ return (
 
 function EmptyState({ title, subtitle }) {
   return (
-    <Card className="rounded-3xl">
+    <Card className="rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
       <CardContent className="p-10 text-center">
         <Sparkles className="mx-auto mb-3" />
         <div className="font-semibold text-lg">{title}</div>
@@ -561,7 +609,7 @@ function Stories({ users, index, setIndex }) {
   };
 
   return (
-    <Card className="rounded-3xl overflow-hidden">
+    <Card className="rounded-3xl overflow-hidden bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between py-4">
         <CardTitle className="text-base">Stories</CardTitle>
         <div className="flex gap-2">
@@ -588,16 +636,16 @@ function Stories({ users, index, setIndex }) {
 
 function Composer({ composer, setComposer, addPost, currentUser }) {
   return (
-    <Card className="rounded-3xl">
-      <CardContent className="p-4">
-        <div className="flex gap-3">
-          <Avatar className="h-10 w-10 shrink-0">
+    <Card className="rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
+      <CardContent className="p-3">
+        <div className="flex gap-2">
+          <Avatar className="h-9 w-9 shrink-0">
             <AvatarImage src={currentUser?.avatar} />
             <AvatarFallback>
               {currentUser?.name?.split(' ').map(n => n[0]).join('') || 'U'}
             </AvatarFallback>
           </Avatar>
-          <div className="w-full space-y-3">
+          <div className="w-full space-y-2">
             <Textarea
               value={composer.text}
               onChange={(e) => setComposer((s) => ({ ...s, text: e.target.value }))}
@@ -669,15 +717,15 @@ function PostCard({ p, user, onUpdate, saved, onToggleSave, currentUser }) {
   };
 
   return (
-    <Card className="rounded-3xl overflow-hidden">
-      <CardHeader className="py-4">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
+    <Card className="rounded-3xl overflow-hidden bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
+      <CardHeader className="py-3 pb-2">
+        <div className="flex items-center gap-2">
+          <Avatar className="h-9 w-9">
             <AvatarImage src={user?.avatar} alt={user?.name} />
             <AvatarFallback>{user?.name?.[0] || 'U'}</AvatarFallback>
           </Avatar>
           <div>
-            <div className="font-semibold leading-tight">{user?.name || 'Unknown User'}</div>
+            <div className="font-semibold leading-tight text-sm">{user?.name || 'Unknown User'}</div>
             <div className="text-xs opacity-60">{new Date(p.createdAt).toLocaleString()}</div>
           </div>
         </div>
@@ -695,46 +743,46 @@ function PostCard({ p, user, onUpdate, saved, onToggleSave, currentUser }) {
           />
         </div>
       )}
-      <CardContent className="pt-4">
-        <p className="text-[15px] leading-relaxed">{p.text}</p>
+      <CardContent className="pt-2 pb-3">
+        <p className="text-sm leading-relaxed">{p.text}</p>
       </CardContent>
-      <CardFooter className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" className="rounded-2xl" onClick={toggleLike}>
-            <ThumbsUp className="h-4 w-4 mr-1" /> {p.likes}
+      <CardFooter className="flex items-center justify-between py-2">
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="secondary" className="rounded-2xl h-8" onClick={toggleLike}>
+            <ThumbsUp className="h-3 w-3 mr-1" /> {p.likes}
           </Button>
-          <Button size="sm" variant="ghost" className="rounded-2xl" onClick={() => setOpenComments(o => !o)}>
-            <MessageCircle className="h-4 w-4 mr-1" /> {p.comments?.length || 0}
+          <Button size="sm" variant="ghost" className="rounded-2xl h-8" onClick={() => setOpenComments(o => !o)}>
+            <MessageCircle className="h-3 w-3 mr-1" /> {p.comments?.length || 0}
           </Button>
         </div>
-        <Button size="sm" variant={saved ? "default" : "ghost"} className="rounded-2xl" onClick={onToggleSave}>
-          <Bookmark className="h-4 w-4 mr-1" /> {saved ? "Saved" : "Save"}
+        <Button size="sm" variant={saved ? "default" : "ghost"} className="rounded-2xl h-8" onClick={onToggleSave}>
+          <Bookmark className="h-3 w-3 mr-1" /> {saved ? "Saved" : "Save"}
         </Button>
       </CardFooter>
       <AnimatePresence initial={false}>
         {openComments && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
             <Separator />
-            <div className="p-4 space-y-3">
+            <div className="p-3 space-y-2">
               {(p.comments || []).map(c => {
                 const commentUser = Object.values(seedUsers).find(u => u.id === c.userId) || currentUser;
                 return (
-                  <div key={c.id} className="flex gap-3">
-                    <Avatar className="h-8 w-8">
+                  <div key={c.id} className="flex gap-2">
+                    <Avatar className="h-7 w-7">
                       <AvatarImage src={commentUser?.avatar} alt="" />
                       <AvatarFallback>{commentUser?.name?.[0] || 'U'}</AvatarFallback>
                     </Avatar>
-                    <div className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl px-3 py-2">
-                      <div className="text-sm">{c.text}</div>
-                      <div className="text-[11px] opacity-60">{formatTime(new Date(c.at))}</div>
+                    <div className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl px-2 py-1.5">
+                      <div className="text-xs">{c.text}</div>
+                      <div className="text-[10px] opacity-60">{formatTime(new Date(c.at))}</div>
                     </div>
                   </div>
                 );
               })}
-              <div className="flex gap-2 pt-2">
-                <Input value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Write a comment…" className="rounded-2xl" />
-                <Button onClick={addComment} className="rounded-2xl" size="sm">
-                  <Send className="h-4 w-4" />
+              <div className="flex gap-2 pt-1">
+                <Input value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Write a comment…" className="rounded-2xl text-sm h-8" />
+                <Button onClick={addComment} className="rounded-2xl h-8" size="sm">
+                  <Send className="h-3 w-3" />
                 </Button>
               </div>
             </div>
@@ -747,56 +795,49 @@ function PostCard({ p, user, onUpdate, saved, onToggleSave, currentUser }) {
 
 function RightRail({ users }) {
   return (
-    <aside className="hidden xl:block space-y-4">
-      <Card className="rounded-3xl">
-        <CardHeader className="py-4">
-          <CardTitle className="text-base">People you may know</CardTitle>
+    <aside className="hidden xl:block space-y-2 w-full max-w-[220px]">
+      <Card className="rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
+        <CardHeader className="py-2 border-b border-zinc-100 dark:border-zinc-700">
+          <CardTitle className="text-xs font-semibold">People you may know</CardTitle>
         </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-3">
-            {users.map((u) => (
-              <div key={u.id} className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-9 w-9">
+        <CardContent className="pt-2 pb-2">
+          <div className="space-y-2">
+            {users.slice(0, 3).map((u) => (
+              <div key={u.id} className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <Avatar className="h-7 w-7 flex-shrink-0">
                     <AvatarImage src={u.avatar} />
                     <AvatarFallback>{u.name[0]}</AvatarFallback>
                   </Avatar>
-                  <div className="leading-tight">
-                    <div className="font-medium">{u.name}</div>
-                    <div className="text-xs opacity-60">@{u.name.toLowerCase().replace(/\s+/g, "")}</div>
+                  <div className="leading-tight min-w-0 flex-1">
+                    <div className="font-medium text-xs truncate">{u.name}</div>
+                    <div className="text-xs opacity-60 truncate">@{u.name.toLowerCase().replace(/\s+/g, "")}</div>
                   </div>
                 </div>
-                <Button size="sm" className="rounded-2xl"><Plus className="h-4 w-4 mr-1" /> Follow</Button>
+                <Button size="sm" className="rounded-xl h-6 text-xs px-2 flex-shrink-0"><Plus className="h-3 w-3" /></Button>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="rounded-3xl">
-        <CardHeader className="py-4">
-          <CardTitle className="text-base">Trends</CardTitle>
+      <Card className="rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
+        <CardHeader className="py-2 border-b border-zinc-100 dark:border-zinc-700">
+          <CardTitle className="text-xs font-semibold">Trends</CardTitle>
         </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-2 text-sm">
+        <CardContent className="pt-2 pb-2">
+          <div className="space-y-1 text-xs">
             {[
               { tag: "#nightRun", posts: "3.1k" },
               { tag: "#devSynth", posts: "1.2k" },
               { tag: "#weekendHike", posts: "5.7k" },
             ].map((t) => (
-              <div key={t.tag} className="flex items-center justify-between">
-                <div>{t.tag}</div>
-                <div className="opacity-60">{t.posts} posts</div>
+              <div key={t.tag} className="flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-lg px-2 py-1 cursor-pointer transition-colors">
+                <div className="font-medium truncate">{t.tag}</div>
+                <div className="opacity-60 text-xs flex-shrink-0">{t.posts}</div>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-3xl">
-        <CardContent className="p-4 text-xs opacity-70">
-          <div>© {new Date().getFullYear()} Bismaya • Vyvoxa Prototype build</div>
-          <div>Made with React, Tailwind, shadcn/ui, Framer Motion.</div>
         </CardContent>
       </Card>
     </aside>
