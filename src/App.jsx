@@ -42,6 +42,11 @@ import {
   ChevronRight,
   ChevronLeft,
 } from "lucide-react";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import AuthModal from "@/components/auth/AuthModal";
+import ProfileSettings from "@/components/auth/ProfileSettings";
+import WelcomeScreen from "@/components/WelcomeScreen";
+import { seedDemoUsers } from "@/lib/demoData";
 
 // --- Helpers ---
 const uid = () => Math.random().toString(36).slice(2);
@@ -118,16 +123,18 @@ const initialPosts = [
 ];
 
 // --- Core UI ---
-export default function App() {
+function VyvoxaApp() {
+  const { currentUser, logout } = useAuth();
   const [dark, setDark] = useState(true);
   const [query, setQuery] = useState("");
   const [posts, setPosts] = useState(initialPosts); // defer loading
-  const [me] = useState(seedUsers[0]);
   const [tab, setTab] = useState("for-you");
-  const [notify, setNotify] = useState([{ id: uid(), text: "Kai liked your post" }]);
+  const [notify, setNotify] = useState([{ id: uid(), text: "Welcome to Vyvoxa!" }]);
   const [composer, setComposer] = useState({ text: "", image: "" });
   const [storyIndex, setStoryIndex] = useState(0);
   const [savedIds, setSavedIds] = useState(new Set());
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(!localStorage.getItem('vyvoxa_visited'));
 
   // Load persisted posts after mount (avoids SSR/window issues)
   useEffect(() => {
@@ -155,7 +162,15 @@ export default function App() {
     document.head.appendChild(style);
     return () => style.remove();
   }, []);
-  const users = useMemo(() => Object.fromEntries(seedUsers.map(u => [u.id, u])), []);
+  
+  const users = useMemo(() => {
+    // Include current user and seed users
+    const allUsers = [...seedUsers];
+    if (currentUser && !allUsers.find(u => u.id === currentUser.id)) {
+      allUsers.unshift(currentUser);
+    }
+    return Object.fromEntries(allUsers.map(u => [u.id, u]));
+  }, [currentUser]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -167,7 +182,7 @@ export default function App() {
     setPosts(prev => [
       {
         id: uid(),
-        userId: me.id,
+        userId: currentUser.id,
         text: composer.text.trim(),
         image: composer.image.trim(),
         likes: 0,
@@ -193,35 +208,74 @@ export default function App() {
 
   const savedPosts = posts.filter(p => savedIds.has(p.id));
 
+  const handleLogout = () => {
+    logout();
+    setTab("for-you");
+    setQuery("");
+    setNotify([{ id: uid(), text: "You've been signed out" }]);
+  };
+
+  const handleGetStarted = () => {
+    localStorage.setItem('vyvoxa_visited', 'true');
+    setShowWelcome(false);
+  };
+
+  // Show welcome screen for first-time visitors
+  if (showWelcome) {
+    return <WelcomeScreen onGetStarted={handleGetStarted} />;
+  }
+
+  if (!currentUser) {
+    return <AuthModal onClose={() => setShowAuthModal(false)} />;
+  }
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-black text-zinc-900 dark:text-zinc-100">
-        <TopBar dark={dark} setDark={setDark} onSearch={setQuery} notifications={notify} />
+        <TopBar 
+          dark={dark} 
+          setDark={setDark} 
+          onSearch={setQuery} 
+          notifications={notify} 
+          currentUser={currentUser}
+        />
         <main className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-[260px_1fr_320px] gap-6 px-4 md:px-6 py-6">
-          <LeftNav tab={tab} setTab={setTab} me={me} />
-          <Feed
-            tab={tab}
-            setTab={setTab}
-            posts={filtered}
-            users={users}
-            composer={composer}
-            setComposer={setComposer}
-            addPost={addPost}
-            storyIndex={storyIndex}
-            setStoryIndex={setStoryIndex}
-            onUpdatePost={updatePost}
-            savedIds={savedIds}
-            onToggleSave={toggleSave}
-            savedPosts={savedPosts}
+          <LeftNav 
+            tab={tab} 
+            setTab={setTab} 
+            me={currentUser} 
+            onLogout={handleLogout}
           />
-          <RightRail users={seedUsers} />
+          {tab === "settings" ? (
+            <div className="space-y-4">
+              <ProfileSettings />
+            </div>
+          ) : (
+            <Feed
+              tab={tab}
+              setTab={setTab}
+              posts={filtered}
+              users={users}
+              composer={composer}
+              setComposer={setComposer}
+              addPost={addPost}
+              storyIndex={storyIndex}
+              setStoryIndex={setStoryIndex}
+              onUpdatePost={updatePost}
+              savedIds={savedIds}
+              onToggleSave={toggleSave}
+              savedPosts={savedPosts}
+              currentUser={currentUser}
+            />
+          )}
+          <RightRail users={Object.values(users).filter(u => u.id !== currentUser.id)} />
         </main>
       </div>
     </TooltipProvider>
   );
 }
 
-function TopBar({ dark, setDark, onSearch, notifications }) {
+function TopBar({ dark, setDark, onSearch, notifications, currentUser }) {
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -266,8 +320,10 @@ function TopBar({ dark, setDark, onSearch, notifications }) {
           </div>
 
           <Avatar className="h-9 w-9">
-            <AvatarImage src={seedUsers[0].avatar} />
-            <AvatarFallback>AS</AvatarFallback>
+            <AvatarImage src={currentUser?.avatar} />
+            <AvatarFallback>
+              {currentUser?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+            </AvatarFallback>
           </Avatar>
         </div>
       </div>
@@ -275,13 +331,13 @@ function TopBar({ dark, setDark, onSearch, notifications }) {
   );
 }
 
-function LeftNav({ tab, setTab, me }) {
-  const LinkBtn = ({ icon: Icon, label, value }) => (
+function LeftNav({ tab, setTab, me, onLogout }) {
+  const LinkBtn = ({ icon: Icon, label, value, onClick }) => (
     <Button
       variant={tab === value ? "default" : "ghost"}
       className={`w-full justify-start gap-3 rounded-2xl ${tab === value ? "shadow" : ""
         }`}
-      onClick={() => setTab(value)}
+      onClick={onClick || (() => setTab(value))}
     >
       <Icon className="h-4 w-4" /> {label}
     </Button>
@@ -293,11 +349,13 @@ function LeftNav({ tab, setTab, me }) {
         <CardContent className="p-4">
           <div className="flex items-center gap-3 mb-4">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={me.avatar} />
-              <AvatarFallback>ME</AvatarFallback>
+              <AvatarImage src={me?.avatar} />
+              <AvatarFallback>
+                {me?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+              </AvatarFallback>
             </Avatar>
             <div>
-              <div className="font-semibold leading-tight">{me.name}</div>
+              <div className="font-semibold leading-tight">{me?.name || 'User'}</div>
               <Badge variant="secondary" className="rounded-full">Creator</Badge>
             </div>
           </div>
@@ -307,7 +365,7 @@ function LeftNav({ tab, setTab, me }) {
             <LinkBtn icon={Bookmark} label="Saved" value="saved" />
             <Separator className="my-2" />
             <LinkBtn icon={Settings} label="Settings" value="settings" />
-            <LinkBtn icon={LogOut} label="Sign out" value="logout" />
+            <LinkBtn icon={LogOut} label="Sign out" value="logout" onClick={onLogout} />
           </div>
         </CardContent>
       </Card>
@@ -328,12 +386,18 @@ function Feed({
   onUpdatePost,
   savedIds,
   onToggleSave,
-  savedPosts
+  savedPosts,
+  currentUser
 }) {
 return (
     <div className="space-y-4">
       <Stories users={Object.values(users)} index={storyIndex} setIndex={setStoryIndex} />
-      <Composer composer={composer} setComposer={setComposer} addPost={addPost} />
+      <Composer 
+        composer={composer} 
+        setComposer={setComposer} 
+        addPost={addPost} 
+        currentUser={currentUser}
+      />
       <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList className="grid grid-cols-3 rounded-2xl">
           <TabsTrigger value="for-you">For You</TabsTrigger>
@@ -341,14 +405,28 @@ return (
           <TabsTrigger value="saved">Saved</TabsTrigger>
         </TabsList>
         <TabsContent value="for-you" className="mt-4">
-          <PostList posts={posts} users={users} onUpdatePost={onUpdatePost} savedIds={savedIds} onToggleSave={onToggleSave} />
+          <PostList 
+            posts={posts} 
+            users={users} 
+            onUpdatePost={onUpdatePost} 
+            savedIds={savedIds} 
+            onToggleSave={onToggleSave}
+            currentUser={currentUser}
+          />
         </TabsContent>
         <TabsContent value="following" className="mt-4">
           <EmptyState title="No following yet" subtitle="Find people and start connecting." />
         </TabsContent>
         <TabsContent value="saved" className="mt-4">
           {savedPosts.length
-            ? <PostList posts={savedPosts} users={users} onUpdatePost={onUpdatePost} savedIds={savedIds} onToggleSave={onToggleSave} />
+            ? <PostList 
+                posts={savedPosts} 
+                users={users} 
+                onUpdatePost={onUpdatePost} 
+                savedIds={savedIds} 
+                onToggleSave={onToggleSave}
+                currentUser={currentUser}
+              />
             : <EmptyState title="No saved posts" subtitle="Tap the bookmark on any post to save it." />}
         </TabsContent>
       </Tabs>
@@ -403,14 +481,16 @@ function Stories({ users, index, setIndex }) {
   );
 }
 
-function Composer({ composer, setComposer, addPost }) {
+function Composer({ composer, setComposer, addPost, currentUser }) {
   return (
     <Card className="rounded-3xl">
       <CardContent className="p-4">
         <div className="flex gap-3">
           <Avatar className="h-10 w-10 shrink-0">
-            <AvatarImage src={seedUsers[0].avatar} />
-            <AvatarFallback>ME</AvatarFallback>
+            <AvatarImage src={currentUser?.avatar} />
+            <AvatarFallback>
+              {currentUser?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+            </AvatarFallback>
           </Avatar>
           <div className="w-full space-y-3">
             <Textarea
@@ -442,7 +522,7 @@ function Composer({ composer, setComposer, addPost }) {
   );
 }
 
-function PostList({ posts, users, onUpdatePost, savedIds, onToggleSave }) {
+function PostList({ posts, users, onUpdatePost, savedIds, onToggleSave, currentUser }) {
   return (
     <div className="grid gap-4">
       <AnimatePresence initial={false}>
@@ -454,6 +534,7 @@ function PostList({ posts, users, onUpdatePost, savedIds, onToggleSave }) {
               onUpdate={onUpdatePost}
               saved={savedIds.has(p.id)}
               onToggleSave={() => onToggleSave(p.id)}
+              currentUser={currentUser}
             />
           </motion.div>
         ))}
@@ -462,7 +543,7 @@ function PostList({ posts, users, onUpdatePost, savedIds, onToggleSave }) {
   );
 }
 
-function PostCard({ p, user, onUpdate, saved, onToggleSave }) {
+function PostCard({ p, user, onUpdate, saved, onToggleSave, currentUser }) {
   const [commentText, setCommentText] = useState("");
   const [openComments, setOpenComments] = useState(false);
 
@@ -472,7 +553,12 @@ function PostCard({ p, user, onUpdate, saved, onToggleSave }) {
 
   const addComment = () => {
     if (!commentText.trim()) return;
-    const next = [...(p.comments || []), { id: uid(), userId: seedUsers[0].id, text: commentText.trim(), at: Date.now() }];
+    const next = [...(p.comments || []), { 
+      id: uid(), 
+      userId: currentUser.id, 
+      text: commentText.trim(), 
+      at: Date.now() 
+    }];
     onUpdate(p.id, { comments: next });
     setCommentText("");
   };
@@ -482,11 +568,11 @@ function PostCard({ p, user, onUpdate, saved, onToggleSave }) {
       <CardHeader className="py-4">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={user.avatar} alt={user.name} />
-            <AvatarFallback>{user.name[0]}</AvatarFallback>
+            <AvatarImage src={user?.avatar} alt={user?.name} />
+            <AvatarFallback>{user?.name?.[0] || 'U'}</AvatarFallback>
           </Avatar>
           <div>
-            <div className="font-semibold leading-tight">{user.name}</div>
+            <div className="font-semibold leading-tight">{user?.name || 'Unknown User'}</div>
             <div className="text-xs opacity-60">{new Date(p.createdAt).toLocaleString()}</div>
           </div>
         </div>
@@ -525,18 +611,21 @@ function PostCard({ p, user, onUpdate, saved, onToggleSave }) {
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
             <Separator />
             <div className="p-4 space-y-3">
-              {(p.comments || []).map(c => (
-                <div key={c.id} className="flex gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={seedUsers.find(u => u.id === c.userId)?.avatar} alt="" />
-                    <AvatarFallback>U</AvatarFallback>
-                  </Avatar>
-                  <div className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl px-3 py-2">
-                    <div className="text-sm">{c.text}</div>
-                    <div className="text-[11px] opacity-60">{formatTime(new Date(c.at))}</div>
+              {(p.comments || []).map(c => {
+                const commentUser = Object.values(seedUsers).find(u => u.id === c.userId) || currentUser;
+                return (
+                  <div key={c.id} className="flex gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={commentUser?.avatar} alt="" />
+                      <AvatarFallback>{commentUser?.name?.[0] || 'U'}</AvatarFallback>
+                    </Avatar>
+                    <div className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl px-3 py-2">
+                      <div className="text-sm">{c.text}</div>
+                      <div className="text-[11px] opacity-60">{formatTime(new Date(c.at))}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div className="flex gap-2 pt-2">
                 <Input value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Write a comment…" className="rounded-2xl" />
                 <Button onClick={addComment} className="rounded-2xl" size="sm">
@@ -606,5 +695,18 @@ function RightRail({ users }) {
         </CardContent>
       </Card>
     </aside>
+  );
+}
+
+export default function App() {
+  // Seed demo users for testing
+  useEffect(() => {
+    seedDemoUsers();
+  }, []);
+
+  return (
+    <AuthProvider>
+      <VyvoxaApp />
+    </AuthProvider>
   );
 }
