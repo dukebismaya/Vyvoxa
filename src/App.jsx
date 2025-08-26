@@ -412,7 +412,7 @@ function VyvoxaApp() {
             </div>
             <div className="flex items-center justify-center gap-4 mt-2">
               <a 
-                href="https://discord.gg/your-server" 
+                href="https://discord.gg/nE4QKpgfcj" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
@@ -421,7 +421,7 @@ function VyvoxaApp() {
                 Discord
               </a>
               <a 
-                href="https://github.com/bismayajyotidali" 
+                href="https://github.com/dukebismaya" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
@@ -430,7 +430,7 @@ function VyvoxaApp() {
                 GitHub
               </a>
               <a 
-                href="https://linkedin.com/in/bismayajyotidali" 
+                href="https://www.linkedin.com/in/bismaya-jyoti-dalei-74692a328" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
@@ -439,7 +439,7 @@ function VyvoxaApp() {
                 LinkedIn
               </a>
               <a 
-                href="https://youtube.com/@bismayajyotidali" 
+                href="https://youtube.com/@knoxemberlyn" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
