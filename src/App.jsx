@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,
@@ -165,13 +165,23 @@ function VyvoxaApp() {
     }
   });
 
+  // Load posts function
+  const loadPosts = useCallback(() => {
+    const allPosts = postManager.getAllPosts();
+    // Filter out posts with no content (both text and image are empty)
+    const validPosts = allPosts.filter(post => post.text.trim() || post.image || post.video);
+    
+    // If we filtered out posts, update the storage to remove empty posts
+    if (validPosts.length !== allPosts.length) {
+      postManager.posts = validPosts;
+      postManager.savePosts();
+    }
+    
+    setPosts(validPosts);
+  }, []);
+
   // Load posts from postManager
   useEffect(() => {
-    const loadPosts = () => {
-      const allPosts = postManager.getAllPosts();
-      setPosts(allPosts);
-    };
-
     // Load initial posts
     loadPosts();
 
@@ -179,7 +189,7 @@ function VyvoxaApp() {
     const unsubscribe = postManager.subscribe(loadPosts);
 
     return unsubscribe;
-  }, []);
+  }, [loadPosts]);
 
   // Load friend requests and trending hashtags
   useEffect(() => {
@@ -234,6 +244,8 @@ function VyvoxaApp() {
   const addPost = async (postData) => {
     try {
       const newPost = postManager.createPost(postData, currentUser);
+      // Reload all posts to get the updated list
+      loadPosts();
       setNotify(prev => [...prev, { id: uid(), text: "Post shared successfully!" }]);
       setShowEnhancedComposer(false);
       return newPost;
@@ -736,6 +748,19 @@ function Stories({ users, index, setIndex }) {
 }
 
 function Composer({ composer, setComposer, addPost, currentUser }) {
+  const handlePost = async () => {
+    if (!composer.text.trim() && !composer.image) return;
+    
+    await addPost({
+      text: composer.text.trim(),
+      image: composer.image.trim(),
+      privacy: 'public'
+    });
+    
+    // Reset composer
+    setComposer({ text: '', image: '' });
+  };
+
   return (
     <Card className="rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm">
       <CardContent className="p-3">
@@ -759,7 +784,7 @@ function Composer({ composer, setComposer, addPost, currentUser }) {
                 onChange={(e) => setComposer((s) => ({ ...s, image: e.target.value }))}
                 className="rounded-2xl"
               />
-              <Button onClick={addPost} className="rounded-2xl">
+              <Button onClick={handlePost} className="rounded-2xl">
                 <Send className="h-4 w-4 mr-2" /> Post
               </Button>
             </div>
