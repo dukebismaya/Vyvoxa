@@ -355,6 +355,60 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const cancelFriendRequest = async (requestId) => {
+    try {
+      const requests = JSON.parse(localStorage.getItem('vyvoxa_friend_requests') || '[]');
+      
+      const requestIndex = requests.findIndex(req => req.id === requestId);
+      if (requestIndex === -1) {
+        throw new Error('Friend request not found');
+      }
+
+      const request = requests[requestIndex];
+      
+      // Only allow sender to cancel their own request
+      if (request.senderId !== currentUser.id) {
+        throw new Error('You can only cancel your own friend requests');
+      }
+
+      // Remove the request
+      requests.splice(requestIndex, 1);
+      
+      localStorage.setItem('vyvoxa_friend_requests', JSON.stringify(requests));
+
+      return { success: true };
+    } catch (error) {
+      throw new Error(error.message || 'Failed to cancel friend request');
+    }
+  };
+
+  const rejectFriendRequest = async (requestId) => {
+    try {
+      const requests = JSON.parse(localStorage.getItem('vyvoxa_friend_requests') || '[]');
+      
+      const requestIndex = requests.findIndex(req => req.id === requestId);
+      if (requestIndex === -1) {
+        throw new Error('Friend request not found');
+      }
+
+      const request = requests[requestIndex];
+      
+      // Only allow receiver to reject request
+      if (request.receiverId !== currentUser.id) {
+        throw new Error('You can only reject requests sent to you');
+      }
+
+      // Remove the request
+      requests.splice(requestIndex, 1);
+      
+      localStorage.setItem('vyvoxa_friend_requests', JSON.stringify(requests));
+
+      return { success: true };
+    } catch (error) {
+      throw new Error(error.message || 'Failed to reject friend request');
+    }
+  };
+
   const value = {
     currentUser,
     isAuthenticated,
@@ -366,6 +420,8 @@ export function AuthProvider({ children }) {
     updateProfile,
     sendFriendRequest,
     acceptFriendRequest,
+    cancelFriendRequest,
+    rejectFriendRequest,
     getFriendRequests,
     getAllUsers,
     getFriends,

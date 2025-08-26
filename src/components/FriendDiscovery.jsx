@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export default function FriendDiscovery({ onClose }) {
-  const { currentUser, getAllUsers, sendFriendRequest, getFriendRequests, acceptFriendRequest } = useAuth();
+  const { currentUser, getAllUsers, sendFriendRequest, getFriendRequests, acceptFriendRequest, cancelFriendRequest, rejectFriendRequest } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [allUsers, setAllUsers] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
@@ -78,6 +78,28 @@ export default function FriendDiscovery({ onClose }) {
       loadUsers(); // Refresh users list
     } catch (error) {
       console.error('Error accepting friend request:', error);
+    }
+    setLoading(false);
+  };
+
+  const handleCancelRequest = async (requestId) => {
+    setLoading(true);
+    try {
+      await cancelFriendRequest(requestId);
+      loadFriendRequests(); // Reload to update UI
+    } catch (error) {
+      console.error('Error canceling friend request:', error);
+    }
+    setLoading(false);
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    setLoading(true);
+    try {
+      await rejectFriendRequest(requestId);
+      loadFriendRequests(); // Reload to update UI
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
     }
     setLoading(false);
   };
@@ -176,15 +198,30 @@ export default function FriendDiscovery({ onClose }) {
                       Friends
                     </Button>
                   ) : isRequestSent(user.id) ? (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      disabled
-                      className="bg-orange-50 border-orange-200 text-orange-700"
-                    >
-                      <Clock className="h-4 w-4 mr-1" />
-                      Pending
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="bg-orange-50 border-orange-200 text-orange-700"
+                        disabled
+                      >
+                        <Clock className="h-4 w-4 mr-1" />
+                        Pending
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          const request = sentRequests.find(r => r.receiverId === user.id);
+                          if (request) handleCancelRequest(request.id);
+                        }}
+                        disabled={loading}
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
                   ) : (
                     <Button 
                       size="sm" 
@@ -220,7 +257,12 @@ export default function FriendDiscovery({ onClose }) {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-      onClick={onClose}
+      onClick={(e) => {
+        // Only close if clicking the backdrop, not the modal content
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
     >
       <motion.div
         initial={{ y: 50 }}
@@ -337,7 +379,11 @@ export default function FriendDiscovery({ onClose }) {
                                   <Check className="h-4 w-4 mr-1" />
                                   Accept
                                 </Button>
-                                <Button size="sm" variant="outline">
+                                <Button size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleRejectRequest(request.id)}
+                                  disabled={loading}
+                                >
                                   <X className="h-4 w-4 mr-1" />
                                   Decline
                                 </Button>

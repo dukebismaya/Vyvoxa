@@ -114,13 +114,29 @@ export class PostManager {
     const post = this.posts.find(p => p.id === postId);
     if (!post) throw new Error('Post not found');
 
-    // Remove user from all reaction types first
-    Object.keys(post.reactions).forEach(type => {
-      post.reactions[type] = post.reactions[type].filter(id => id !== userId);
-    });
+    // Initialize reactions if not exist
+    if (!post.reactions) {
+      post.reactions = { like: [], love: [], laugh: [], wow: [], sad: [], angry: [] };
+    }
 
-    // Add user to new reaction type
-    if (!post.reactions[reactionType].includes(userId)) {
+    // Check if user already has this reaction
+    const hasReaction = post.reactions[reactionType]?.includes(userId);
+    
+    if (hasReaction) {
+      // Remove the reaction (toggle off)
+      post.reactions[reactionType] = post.reactions[reactionType].filter(id => id !== userId);
+    } else {
+      // Remove user from all other reaction types first
+      Object.keys(post.reactions).forEach(type => {
+        if (type !== reactionType) {
+          post.reactions[type] = post.reactions[type].filter(id => id !== userId);
+        }
+      });
+      
+      // Add user to new reaction type
+      if (!post.reactions[reactionType]) {
+        post.reactions[reactionType] = [];
+      }
       post.reactions[reactionType].push(userId);
     }
 

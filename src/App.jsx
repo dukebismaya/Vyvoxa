@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SafeAvatar } from "@/components/ui/safe-avatar";
+import MultiReaction from "@/components/ui/multi-reaction";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -57,6 +58,7 @@ import AuthModal from "@/components/auth/AuthModal";
 import ProfileSettings from "@/components/auth/ProfileSettings";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import NotificationPanel from "@/components/NotificationPanel";
 import FriendDiscovery from "@/components/FriendDiscovery";
 import EnhancedPostComposer from "@/components/EnhancedPostComposer";
 import { seedDemoUsers } from "@/lib/demoData";
@@ -139,7 +141,7 @@ const initialPosts = [
 
 // --- Core UI ---
 function VyvoxaApp() {
-  const { currentUser, logout, getFriendRequests, getFollowingPosts } = useAuth();
+  const { currentUser, logout, getFriendRequests, getFollowingPosts, acceptFriendRequest, rejectFriendRequest } = useAuth();
   const [dark, setDark] = useState(true);
   const [query, setQuery] = useState("");
   const [posts, setPosts] = useState([]); // Start with empty array, load from postManager
@@ -151,6 +153,7 @@ function VyvoxaApp() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showFriendDiscovery, setShowFriendDiscovery] = useState(false);
   const [showEnhancedComposer, setShowEnhancedComposer] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [friendRequests, setFriendRequests] = useState([]);
   const [trendingHashtags, setTrendingHashtags] = useState([]);
   const [showWelcome, setShowWelcome] = useState(() => {
@@ -270,6 +273,26 @@ function VyvoxaApp() {
     }
   };
 
+  const handleAcceptFriendRequest = async (requestId) => {
+    try {
+      await acceptFriendRequest(requestId);
+      // Refresh friend requests
+      loadFriendRequests();
+    } catch (error) {
+      logError(error, 'Accepting friend request');
+    }
+  };
+
+  const handleRejectFriendRequest = async (requestId) => {
+    try {
+      await rejectFriendRequest(requestId);
+      // Refresh friend requests
+      loadFriendRequests();
+    } catch (error) {
+      logError(error, 'Rejecting friend request');
+    }
+  };
+
   const sharePost = (postId, shareText = '') => {
     try {
       postManager.sharePost(postId, currentUser, shareText);
@@ -320,6 +343,10 @@ function VyvoxaApp() {
           currentUser={currentUser}
           friendRequests={friendRequests}
           onShowFriendDiscovery={() => setShowFriendDiscovery(true)}
+          showNotifications={showNotifications}
+          onToggleNotifications={(show) => typeof show === 'boolean' ? setShowNotifications(show) : setShowNotifications(!showNotifications)}
+          onAcceptFriendRequest={handleAcceptFriendRequest}
+          onRejectFriendRequest={handleRejectFriendRequest}
         />
         <main className="w-full grid grid-cols-1 xl:grid-cols-[minmax(160px,180px)_1fr_minmax(200px,220px)] gap-2 px-1 sm:px-2 py-4 pb-20 min-h-[calc(100vh-3.5rem)]" style={{maxWidth: '100vw'}}>
           <LeftNav 
@@ -430,7 +457,19 @@ function VyvoxaApp() {
   );
 }
 
-function TopBar({ dark, setDark, onSearch, notifications, currentUser, friendRequests, onShowFriendDiscovery }) {
+function TopBar({ 
+  dark, 
+  setDark, 
+  onSearch, 
+  notifications, 
+  currentUser, 
+  friendRequests, 
+  onShowFriendDiscovery,
+  showNotifications,
+  onToggleNotifications,
+  onAcceptFriendRequest,
+  onRejectFriendRequest
+}) {
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -460,22 +499,39 @@ function TopBar({ dark, setDark, onSearch, notifications, currentUser, friendReq
         </div>
 
         <div className="flex items-center gap-3">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-2xl relative">
-                <Bell className="h-5 w-5" />
-                {(notifications.length > 0 || friendRequests.length > 0) && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                    {notifications.length + friendRequests.length}
-                  </Badge>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              Notifications ({notifications.length})
-              {friendRequests.length > 0 && ` • ${friendRequests.length} friend requests`}
-            </TooltipContent>
-          </Tooltip>
+          <div className="relative">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="secondary" 
+                  size="icon" 
+                  className="rounded-2xl relative"
+                  onClick={onToggleNotifications}
+                >
+                  <Bell className="h-5 w-5" />
+                  {(notifications.length > 0 || friendRequests.length > 0) && (
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                      {notifications.length + friendRequests.length}
+                    </Badge>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Notifications ({notifications.length})
+                {friendRequests.length > 0 && ` • ${friendRequests.length} friend requests`}
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Notification Panel */}
+            <NotificationPanel
+              notifications={notifications}
+              friendRequests={friendRequests}
+              onAcceptRequest={onAcceptFriendRequest}
+              onRejectRequest={onRejectFriendRequest}
+              onClose={() => onToggleNotifications(false)}
+              isVisible={showNotifications}
+            />
+          </div>
 
           {onShowFriendDiscovery && (
             <Tooltip>
@@ -565,7 +621,8 @@ function Feed({
   onToggleSave,
   savedPosts,
   currentUser,
-  getFollowingPosts
+  getFollowingPosts,
+  onToggleReaction
 }) {
 return (
     <div className="space-y-3">
@@ -590,6 +647,7 @@ return (
             savedIds={savedIds} 
             onToggleSave={onToggleSave}
             currentUser={currentUser}
+            onToggleReaction={onToggleReaction}
           />
         </TabsContent>
         <TabsContent value="following" className="mt-4">
@@ -603,6 +661,7 @@ return (
                   savedIds={savedIds} 
                   onToggleSave={onToggleSave}
                   currentUser={currentUser}
+                  onToggleReaction={onToggleReaction}
                 />
               : <EmptyState title="No posts from friends" subtitle="Add friends to see their posts here." />;
           })()}
@@ -616,6 +675,7 @@ return (
                 savedIds={savedIds} 
                 onToggleSave={onToggleSave}
                 currentUser={currentUser}
+                onToggleReaction={onToggleReaction}
               />
             : <EmptyState title="No saved posts" subtitle="Tap the bookmark on any post to save it." />}
         </TabsContent>
@@ -715,7 +775,7 @@ function Composer({ composer, setComposer, addPost, currentUser }) {
   );
 }
 
-function PostList({ posts, users, onUpdatePost, savedIds, onToggleSave, currentUser }) {
+function PostList({ posts, users, onUpdatePost, savedIds, onToggleSave, currentUser, onToggleReaction }) {
   return (
     <div className="grid gap-4">
       <AnimatePresence initial={false}>
@@ -728,6 +788,7 @@ function PostList({ posts, users, onUpdatePost, savedIds, onToggleSave, currentU
               saved={savedIds.has(p.id)}
               onToggleSave={() => onToggleSave(p.id)}
               currentUser={currentUser}
+              onToggleReaction={onToggleReaction}
             />
           </motion.div>
         ))}
@@ -736,13 +797,9 @@ function PostList({ posts, users, onUpdatePost, savedIds, onToggleSave, currentU
   );
 }
 
-function PostCard({ p, user, onUpdate, saved, onToggleSave, currentUser }) {
+function PostCard({ p, user, onUpdate, saved, onToggleSave, currentUser, onToggleReaction }) {
   const [commentText, setCommentText] = useState("");
   const [openComments, setOpenComments] = useState(false);
-
-  const toggleLike = () => {
-    onUpdate(p.id, { likes: p.likes + 1 });
-  };
 
   const addComment = () => {
     if (!commentText.trim()) return;
@@ -789,9 +846,11 @@ function PostCard({ p, user, onUpdate, saved, onToggleSave, currentUser }) {
       </CardContent>
       <CardFooter className="flex items-center justify-between py-2">
         <div className="flex items-center gap-1">
-          <Button size="sm" variant="secondary" className="rounded-2xl h-8" onClick={toggleLike}>
-            <ThumbsUp className="h-3 w-3 mr-1" /> {p.likes}
-          </Button>
+          <MultiReaction 
+            post={p} 
+            currentUser={currentUser} 
+            onReaction={onToggleReaction}
+          />
           <Button size="sm" variant="ghost" className="rounded-2xl h-8" onClick={() => setOpenComments(o => !o)}>
             <MessageCircle className="h-3 w-3 mr-1" /> {p.comments?.length || 0}
           </Button>
